@@ -11,14 +11,15 @@ pipeline {
         stage('Checkout') {
             steps {
                 sh '''
-                    echo "Workspace:"
+                    echo "Checking workspace..."
                     pwd
-
-                    echo "Files:"
                     ls -la
 
-                    echo "Git directory:"
-                    ls -la .git || true
+                    echo "Marking Jenkins workspace as safe for Git..."
+                    git config --global --add safe.directory "${WORKSPACE}"
+
+                    echo "Checking Git..."
+                    git status
                 '''
             }
         }
@@ -55,7 +56,6 @@ pipeline {
                 script {
                     sh '''
                         cd spring-boot-app
-
                         docker build -t ${DOCKER_IMAGE} .
                     '''
 
@@ -87,23 +87,22 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        echo "Checking workspace..."
+                        echo "Configuring Git..."
 
-                        pwd
-                        ls -la
-
-                        echo "Checking Git..."
-                        git status
+                        git config --global --add safe.directory "${WORKSPACE}"
 
                         git config user.email "adhilstar303@gmail.com"
                         git config user.name "${GIT_USER_NAME}"
+
+                        echo "Current Git status:"
+                        git status
 
                         echo "Updating deployment image..."
 
                         sed -i "s|image: .*|image: adhil7/springbootapp:${BUILD_NUMBER}|g" \
                             spring-boot-app-manifests/deployment.yml
 
-                        echo "Deployment file after update:"
+                        echo "Updated deployment:"
                         cat spring-boot-app-manifests/deployment.yml
 
                         git add spring-boot-app-manifests/deployment.yml
@@ -111,6 +110,8 @@ pipeline {
                         git commit \
                             -m "Update image tag to ${BUILD_NUMBER} [skip ci]" \
                             || echo "No changes to commit"
+
+                        echo "Pushing changes..."
 
                         git push \
                             https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git \
