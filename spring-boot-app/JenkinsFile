@@ -22,17 +22,17 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh '''
-                        cd spring-boot-app
-                        mvn sonar:sonar \
-                          -Dsonar.projectKey=my-ec2-project \
-                          -Dsonar.sources=src
-                    '''
-                }
-            }
+    steps {
+        withSonarQubeEnv('sonarqube') {
+            sh '''
+                cd spring-boot-app
+                mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                  -Dsonar.projectKey=my-ec2-project \
+                  -Dsonar.sources=src
+            '''
         }
+    }
+}
 
         stage('Build and Push Docker Image') {
             environment {
